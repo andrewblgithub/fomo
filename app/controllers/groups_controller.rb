@@ -3,7 +3,7 @@ class GroupsController < ApplicationController
 
   # GET /groups
   def index
-    @groups = Group.all
+    @groups = current_user.groups 
     json_response(@groups)
   end
 
@@ -14,7 +14,7 @@ class GroupsController < ApplicationController
 
   # POST /groups
   def create
-    @group = Group.create!(group_params)
+    @group = current_user.groups.create!(group_params)
     json_response(@group, :created)
   end
 
@@ -33,7 +33,7 @@ class GroupsController < ApplicationController
   private
 
   def group_params 
-    params.permit(:name, :created_by)
+    params.permit(:name)
   end
 
   def set_group

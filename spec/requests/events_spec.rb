@@ -1,13 +1,15 @@
 require 'rails_helper'
 
 RSpec.describe 'Events API' do
-  let!(:group) { create(:group) }
+  let(:user) { create(:user)  }
+  let!(:group) { create(:group, created_by: user.id)  }
   let!(:events) { create_list(:event, 10, group_id: group.id) }
   let(:group_id) { group.id }
   let(:id) {events.first.id }
+  let(:headers) { valid_headers }
 
   describe 'GET /groups/:group_id/events' do
-    before { get "/groups/#{group_id}/events" }
+    before { get "/groups/#{group_id}/events", params: {}, headers: headers }
 
     context 'when group exists' do
       it 'returns status code 200' do
@@ -33,7 +35,7 @@ RSpec.describe 'Events API' do
   end
 
   describe 'GET /groups/:group_id/events/:id' do
-    before { get "/groups/#{group_id}/events/#{id}" }
+    before { get "/groups/#{group_id}/events/#{id}", params: {}, headers: headers }
     
     context 'when group event exists' do
       it 'returns status code 200' do
@@ -59,10 +61,10 @@ RSpec.describe 'Events API' do
   end
 
   describe 'POST /groups/:group_id/events' do
-    let(:valid_attributes) { { title: 'Fun Times', description: 'This is for sure a fun time', created_by: 'Drew', expires_at: '2017-12-04 00:00:00' } }
+    let(:valid_attributes) { { title: 'Fun Times', description: 'This is for sure a fun time', created_by: user.id.to_s, expires_at: '2017-12-04 00:00:00' }.to_json }
 
     context 'when request attributes are valid' do
-      before { post "/groups/#{group_id}/events", params: valid_attributes }
+      before { post "/groups/#{group_id}/events", params: valid_attributes, headers: headers }
 
       it 'returns status code 201' do
         expect(response).to have_http_status(201)
@@ -70,7 +72,7 @@ RSpec.describe 'Events API' do
     end
 
     context 'when an invalid request' do
-      before { post "/groups/#{group_id}/events", params: {} }
+      before { post "/groups/#{group_id}/events", params: {}, headers: headers }
 
       it 'returns status code 422' do
         expect(response).to have_http_status(422)
@@ -83,9 +85,11 @@ RSpec.describe 'Events API' do
   end
 
   describe 'PUT /groups/:group_id/events/:id' do
-    let(:valid_attributes) { { title: 'Superfun Times' } }
+    let(:valid_attributes) { { title: 'Superfun Times' }.to_json }
 
-    before { put "/groups/#{group_id}/events/#{id}", params: valid_attributes }
+    before do
+      put "/groups/#{group_id}/events/#{id}", params: valid_attributes, headers: headers 
+    end
 
     context 'when event exists' do
       it 'returns status code 204' do
@@ -112,7 +116,7 @@ RSpec.describe 'Events API' do
   end
 
   describe 'DELETE /groups/:id/' do
-    before { delete "/groups/#{group_id}/events/#{id}" }
+    before { delete "/groups/#{group_id}/events/#{id}", params: {}, headers: headers }
 
     it 'returns status code 204' do
       expect(response).to have_http_status(204)

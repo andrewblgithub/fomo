@@ -1,13 +1,15 @@
 require 'rails_helper'
 
-RSpec.describe 'Messages API' do
-  let!(:group) { create(:group) }
-  let!(:messages) { create_list(:message, 20, group_id: group.id) }
+RSpec.describe 'Chats API' do
+  let(:user) { create(:user)  }
+  let!(:group) { create(:group, created_by: user.id) }
+  let!(:chat) { create_list(:chat, 20, group_id: group.id) }
   let(:group_id) { group.id }
-  let(:id) {messages.first.id }
+  let(:id) {chat.first.id }
+  let(:headers) { valid_headers }
 
-  describe 'GET /groups/:group_id/messages' do
-    before { get "/groups/#{group_id}/messages" }
+  describe 'GET /groups/:group_id/chats' do
+    before { get "/groups/#{group_id}/chats", params: {}, headers: headers }
 
     context 'when group exists' do
       it 'returns status code 200' do
@@ -32,8 +34,8 @@ RSpec.describe 'Messages API' do
     end
   end
 
-  describe 'GET /groups/:group_id/messages/:id' do
-    before { get "/groups/#{group_id}/messages/#{id}" }
+  describe 'GET /groups/:group_id/chats/:id' do
+    before { get "/groups/#{group_id}/chats/#{id}", params: {}, headers: headers }
     
     context 'when group message exists' do
       it 'returns status code 200' do
@@ -53,16 +55,18 @@ RSpec.describe 'Messages API' do
       end
 
       it 'returns a not found message' do
-        expect(response.body).to match(/Couldn't find Message/)
+        expect(response.body).to match(/Couldn't find Chat/)
       end
     end
   end
 
-  describe 'POST /groups/:group_id/messages' do
-    let(:valid_attributes) { { content: 'This is for sure a fun time', created_by: 'Drew' } }
+  describe 'POST /groups/:group_id/chats' do
+    let(:valid_attributes) { { content: 'This is for sure a fun time', created_by: user.id.to_s }.to_json }
 
     context 'when request attributes are valid' do
-      before { post "/groups/#{group_id}/messages", params: valid_attributes }
+      before do
+        post "/groups/#{group_id}/chats", params: valid_attributes, headers: headers
+      end
 
       it 'returns status code 201' do
         expect(response).to have_http_status(201)
@@ -70,7 +74,7 @@ RSpec.describe 'Messages API' do
     end
 
     context 'when an invalid request' do
-      before { post "/groups/#{group_id}/messages", params: {} }
+      before { post "/groups/#{group_id}/chats", params: {}, headers: headers }
 
       it 'returns status code 422' do
         expect(response).to have_http_status(422)
@@ -82,10 +86,12 @@ RSpec.describe 'Messages API' do
     end
   end
 
-  describe 'PUT /groups/:group_id/messages/:id' do
-    let(:valid_attributes) { { content: 'This is actually super fun' } }
+  describe 'PUT /groups/:group_id/chats/:id' do
+    let(:valid_attributes) { { content: 'This is actually super fun' }.to_json }
 
-    before { put "/groups/#{group_id}/messages/#{id}", params: valid_attributes }
+    before do
+      put "/groups/#{group_id}/chats/#{id}", params: valid_attributes, headers: headers
+    end
 
     context 'when message exists' do
       it 'returns status code 204' do
@@ -93,7 +99,7 @@ RSpec.describe 'Messages API' do
       end
 
       it 'updates the message' do
-        updated_message = Message.find(id)
+        updated_message = Chat.find(id)
         expect(updated_message.content).to match(/This is actually super fun/) 
       end
     end
@@ -106,13 +112,13 @@ RSpec.describe 'Messages API' do
       end
 
       it 'returns a not found message' do
-        expect(response.body).to match(/Couldn't find Message/)
+        expect(response.body).to match(/Couldn't find Chat/)
       end
     end
   end
 
   describe 'DELETE /groups/:id/' do
-    before { delete "/groups/#{group_id}/messages/#{id}" }
+    before { delete "/groups/#{group_id}/chats/#{id}", params: {}, headers: headers }
 
     it 'returns status code 204' do
       expect(response).to have_http_status(204)

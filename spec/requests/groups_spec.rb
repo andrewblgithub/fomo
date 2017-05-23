@@ -2,14 +2,16 @@ require 'rails_helper'
 
 RSpec.describe 'Groups API', type: :request do
   # initialize test data 
-  let!(:groups) { create_list(:group, 7) }
+  let(:user) { create(:user)  }
+  let!(:groups) { create_list(:group, 7, created_by: user.id) }
   let(:group_id) { groups.first.id }
-
+  # authorize request
+  let(:headers) { valid_headers }
 
   # test suite for GET /groups
   describe 'GET /groups' do
     # make HTTP request before each example
-    before { get '/groups' }
+    before { get '/groups', params: {}, headers: headers  }
 
     it 'returns groups' do
       # json is cusom helper to parse json responses
@@ -24,7 +26,7 @@ RSpec.describe 'Groups API', type: :request do
 
   # test suite for GET /groups/:id
   describe 'GET /groups/:id' do
-    before { get "/groups/#{group_id}" }
+    before { get "/groups/#{group_id}", params: {}, headers: headers  }
 
     context 'when the record exists' do
       it 'returns the group' do
@@ -53,10 +55,12 @@ RSpec.describe 'Groups API', type: :request do
   # test suite for POST /groups
   describe 'POST /groups' do
     #valid payload
-    let(:valid_attributes) { { name: 'FunGroup', created_by: 'Drew' } }
+    let(:valid_attributes) do
+      { name: 'FunGroup', created_by: user.id.to_s }.to_json
+    end
 
     context 'when the request is valid' do
-      before { post '/groups', params: valid_attributes }
+      before { post '/groups', params: valid_attributes, headers: headers  }
 
       it 'creates a group' do
         expect(json['name']).to eq('FunGroup')
@@ -68,24 +72,26 @@ RSpec.describe 'Groups API', type: :request do
     end
 
     context 'when the request is invalid' do
-      before { post '/groups', params: { name: 'Foobar' } }
+      let(:valid_attributes) { { name: nil }.to_json }
+      before { post '/groups', params: valid_attributes, headers: headers  }
 
       it 'returns status code 422' do
         expect(response).to have_http_status(422)
       end
 
       it 'returns a validation failure message' do
-        expect(response.body).to match(/Validation failed: Created by can't be blank/)
+        # changed Validation failed: created_by... to Name
+        expect(response.body).to match(/Validation failed: Name can't be blank/)
       end
     end
   end
 
   # test suite for PUT /groups/:id
   describe 'PUT /groups/:id' do
-    let(:valid_attributes) { { name: 'SuperFunGroup' } }
+    let(:valid_attributes) { { name: 'SuperFunGroup' }.to_json }
 
     context 'when the record exists' do
-      before { put "/groups/#{group_id}", params: valid_attributes }
+      before { put "/groups/#{group_id}", params: valid_attributes, headers: headers }
 
       it 'updates the record' do
         expect(response.body).to be_empty
@@ -99,7 +105,7 @@ RSpec.describe 'Groups API', type: :request do
 
   # test suite for DELETE /groups/:id
   describe 'DELETE /groups/:id' do
-    before { delete "/groups/#{group_id}" }
+    before { delete "/groups/#{group_id}", params: {}, headers: headers }
 
     it 'returns status code 204' do
       expect(response).to have_http_status(204)
